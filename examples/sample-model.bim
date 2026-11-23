@@ -1,0 +1,346 @@
+{
+  "name": "Sample Sales Model",
+  "compatibilityLevel": 1567,
+  "model": {
+    "culture": "en-US",
+    "tables": [
+      {
+        "name": "Customer",
+        "description": "Billing accounts, not individual people.",
+        "columns": [
+          {
+            "name": "CustomerKey",
+            "dataType": "int64",
+            "isKey": true
+          },
+          {
+            "name": "CustomerName",
+            "dataType": "string"
+          },
+          {
+            "name": "SegmentCode",
+            "dataType": "string"
+          },
+          {
+            "name": "Country",
+            "dataType": "string",
+            "description": "ISO country of the billing address"
+          },
+          {
+            "name": "_etl_hash",
+            "dataType": "string",
+            "isHidden": true
+          }
+        ]
+      },
+      {
+        "name": "Product",
+        "columns": [
+          {
+            "name": "ProductKey",
+            "dataType": "int64",
+            "isKey": true
+          },
+          {
+            "name": "ProductName",
+            "dataType": "string"
+          },
+          {
+            "name": "CategoryKey",
+            "dataType": "int64"
+          },
+          {
+            "name": "DiscontinuedFlag",
+            "dataType": "int64"
+          },
+          {
+            "name": "ListPrice",
+            "dataType": "decimal"
+          }
+        ]
+      },
+      {
+        "name": "Category",
+        "columns": [
+          {
+            "name": "CategoryKey",
+            "dataType": "int64",
+            "isKey": true
+          },
+          {
+            "name": "CategoryName",
+            "dataType": "string"
+          }
+        ]
+      },
+      {
+        "name": "Date",
+        "dataCategory": "Time",
+        "columns": [
+          {
+            "name": "DateKey",
+            "dataType": "dateTime",
+            "isKey": true
+          },
+          {
+            "name": "Year",
+            "dataType": "int64"
+          },
+          {
+            "name": "MonthName",
+            "dataType": "string"
+          }
+        ]
+      },
+      {
+        "name": "Employee",
+        "columns": [
+          {
+            "name": "EmployeeKey",
+            "dataType": "int64",
+            "isKey": true
+          },
+          {
+            "name": "EmployeeName",
+            "dataType": "string"
+          },
+          {
+            "name": "ManagerKey",
+            "dataType": "int64"
+          },
+          {
+            "name": "RegionCode",
+            "dataType": "string"
+          }
+        ]
+      },
+      {
+        "name": "Sales",
+        "columns": [
+          {
+            "name": "SalesKey",
+            "dataType": "int64"
+          },
+          {
+            "name": "CustomerKey",
+            "dataType": "int64"
+          },
+          {
+            "name": "ProductKey",
+            "dataType": "int64"
+          },
+          {
+            "name": "OrderDate",
+            "dataType": "dateTime"
+          },
+          {
+            "name": "ShipDate",
+            "dataType": "dateTime"
+          },
+          {
+            "name": "EmployeeKey",
+            "dataType": "int64"
+          },
+          {
+            "name": "Amount",
+            "dataType": "decimal"
+          },
+          {
+            "name": "Cost",
+            "dataType": "decimal"
+          },
+          {
+            "name": "Discount",
+            "dataType": "decimal"
+          },
+          {
+            "name": "OrderStatus",
+            "dataType": "string"
+          }
+        ],
+        "measures": [
+          {
+            "name": "Revenue",
+            "expression": "CALCULATE ( SUM ( Sales[Amount] ), Sales[OrderStatus] = \"Confirmed\" )"
+          },
+          {
+            "name": "Total Revenue",
+            "expression": "CALCULATE(SUM(Sales[Amount]), Sales[OrderStatus] = \"Confirmed\")"
+          },
+          {
+            "name": "Net Revenue",
+            "description": "Revenue after discount, confirmed orders only, excluding discontinued lines.",
+            "expression": "CALCULATE ( SUMX ( Sales, Sales[Amount] * ( 1 - Sales[Discount] ) ), Sales[OrderStatus] = \"Confirmed\", Product[DiscontinuedFlag] = 0 )"
+          },
+          {
+            "name": "Cost of Sales",
+            "expression": "CALCULATE ( SUM ( Sales[Cost] ), Sales[OrderStatus] IN { \"Confirmed\", \"Shipped\" } )"
+          },
+          {
+            "name": "Gross Margin",
+            "expression": "[Net Revenue] - [Cost of Sales]"
+          },
+          {
+            "name": "Gross Margin %",
+            "expression": "DIVIDE ( [Gross Margin], [Net Revenue], 0 )"
+          },
+          {
+            "name": "Margin Variance %",
+            "expression": "DIVIDE ( SUM ( Sales[Amount] ) - SUM ( Sales[Cost] ), SUM ( Sales[Cost] ), 0 )"
+          },
+          {
+            "name": "Shipped Revenue",
+            "expression": "CALCULATE ( [Revenue], USERELATIONSHIP ( Sales[ShipDate], 'Date'[DateKey] ) )"
+          },
+          {
+            "name": "FY24 Baseline",
+            "expression": "CALCULATE ( [Revenue], 'Date'[DateKey] >= DATE ( 2024, 4, 1 ) )"
+          },
+          {
+            "name": "Order Count",
+            "expression": "DISTINCTCOUNT ( Sales[SalesKey] )"
+          }
+        ]
+      },
+      {
+        "name": "Budget",
+        "columns": [
+          {
+            "name": "SegmentCode",
+            "dataType": "string"
+          },
+          {
+            "name": "BudgetAmount",
+            "dataType": "decimal"
+          }
+        ],
+        "measures": [
+          {
+            "name": "Budget Amount",
+            "expression": "SUM ( Budget[BudgetAmount] )"
+          }
+        ]
+      },
+      {
+        "name": "LocalDateTable_b32a713a-f393-4f55-85e0-66a142b79dec",
+        "isHidden": true,
+        "columns": [
+          {
+            "name": "Date",
+            "dataType": "dateTime",
+            "isKey": true
+          },
+          {
+            "name": "Year",
+            "dataType": "int64"
+          }
+        ]
+      },
+      {
+        "name": "LocalDateTable_74221416-25f1-48cf-89e5-be4dacffe326",
+        "isHidden": true,
+        "columns": [
+          {
+            "name": "Date",
+            "dataType": "dateTime",
+            "isKey": true
+          },
+          {
+            "name": "Year",
+            "dataType": "int64"
+          }
+        ]
+      },
+      {
+        "name": "DateTableTemplate_9f2c1b44",
+        "isHidden": true,
+        "columns": [
+          {
+            "name": "Date",
+            "dataType": "dateTime",
+            "isKey": true
+          }
+        ]
+      }
+    ],
+    "relationships": [
+      {
+        "name": "r1",
+        "fromTable": "Sales",
+        "fromColumn": "CustomerKey",
+        "toTable": "Customer",
+        "toColumn": "CustomerKey"
+      },
+      {
+        "name": "r2",
+        "fromTable": "Sales",
+        "fromColumn": "ProductKey",
+        "toTable": "Product",
+        "toColumn": "ProductKey"
+      },
+      {
+        "name": "r3",
+        "fromTable": "Sales",
+        "fromColumn": "OrderDate",
+        "toTable": "Date",
+        "toColumn": "DateKey"
+      },
+      {
+        "name": "r4",
+        "fromTable": "Sales",
+        "fromColumn": "ShipDate",
+        "toTable": "Date",
+        "toColumn": "DateKey",
+        "isActive": false
+      },
+      {
+        "name": "r5",
+        "fromTable": "Sales",
+        "fromColumn": "EmployeeKey",
+        "toTable": "Employee",
+        "toColumn": "EmployeeKey"
+      },
+      {
+        "name": "r6",
+        "fromTable": "Product",
+        "fromColumn": "CategoryKey",
+        "toTable": "Category",
+        "toColumn": "CategoryKey"
+      },
+      {
+        "name": "r7",
+        "fromTable": "Employee",
+        "fromColumn": "ManagerKey",
+        "toTable": "Employee",
+        "toColumn": "EmployeeKey",
+        "isActive": false
+      },
+      {
+        "name": "r8",
+        "fromTable": "Budget",
+        "fromColumn": "SegmentCode",
+        "toTable": "Customer",
+        "toColumn": "SegmentCode",
+        "fromCardinality": "many",
+        "toCardinality": "many",
+        "crossFilteringBehavior": "bothDirections"
+      },
+      {
+        "name": "a1",
+        "fromTable": "Sales",
+        "fromColumn": "OrderDate",
+        "toTable": "LocalDateTable_b32a713a-f393-4f55-85e0-66a142b79dec",
+        "toColumn": "Date",
+        "isActive": false
+      },
+      {
+        "name": "a2",
+        "fromTable": "Sales",
+        "fromColumn": "ShipDate",
+        "toTable": "LocalDateTable_74221416-25f1-48cf-89e5-be4dacffe326",
+        "toColumn": "Date",
+        "isActive": false
+      }
+    ]
+  }
+}

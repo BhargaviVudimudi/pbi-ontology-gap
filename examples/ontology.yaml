@@ -1,0 +1,282 @@
+# Ontology draft, extracted from a Power BI semantic model.
+#
+# Everything here was derived mechanically. Nothing in it has been
+# certified by a human. The TODO markers are where the model could not
+# supply an answer, and they are the work, not an oversight.
+
+meta:
+  source_model: "Sample Sales Model"
+  status: draft, uncertified
+
+classes:
+
+  Customer:
+    definition: "Billing accounts, not individual people."
+    table_kind: dimension
+    identifier: CustomerKey  # declared isKey
+    grain_candidate: one row per CustomerKey
+    grain: TODO confirm or correct the candidate above
+    properties:
+      - CustomerKey  # int64
+      - CustomerName  # string
+      - SegmentCode  # string
+      - Country  # string, ISO country of the billing address
+
+  Product:
+    definition: TODO
+    table_kind: dimension
+    identifier: ProductKey  # declared isKey
+    grain_candidate: one row per Category
+    grain: TODO confirm or correct the candidate above
+    # careful: DiscontinuedFlag looks like a dimension but
+    # has no relationship, so the real grain may be finer than the candidate.
+    properties:
+      - ProductKey  # int64
+      - ProductName  # string
+      - CategoryKey  # int64
+      - DiscontinuedFlag  # int64
+      - ListPrice  # decimal
+
+  Category:
+    definition: TODO
+    table_kind: dimension
+    identifier: CategoryKey  # declared isKey
+    grain_candidate: one row per CategoryKey
+    grain: TODO confirm or correct the candidate above
+    properties:
+      - CategoryKey  # int64
+      - CategoryName  # string
+
+  Date:
+    definition: TODO
+    table_kind: date
+    identifier: DateKey  # declared isKey
+    grain_candidate: one row per DateKey
+    grain: TODO confirm or correct the candidate above
+    properties:
+      - DateKey  # dateTime
+      - Year  # int64
+      - MonthName  # string
+
+  Employee:
+    definition: TODO
+    table_kind: dimension
+    identifier: EmployeeKey  # declared isKey
+    grain_candidate: one row per Employee
+    grain: TODO confirm or correct the candidate above
+    # careful: RegionCode looks like a dimension but
+    # has no relationship, so the real grain may be finer than the candidate.
+    properties:
+      - EmployeeKey  # int64
+      - EmployeeName  # string
+      - ManagerKey  # int64
+      - RegionCode  # string
+
+  Sales:
+    definition: TODO
+    table_kind: fact
+    identifier: TODO
+    grain_candidate: one row per Customer per Product per Date per Employee
+    grain: TODO confirm or correct the candidate above
+    # careful: OrderStatus looks like a dimension but
+    # has no relationship, so the real grain may be finer than the candidate.
+    properties:
+      - SalesKey  # int64
+      - CustomerKey  # int64
+      - ProductKey  # int64
+      - OrderDate  # dateTime
+      - ShipDate  # dateTime
+      - EmployeeKey  # int64
+      - Amount  # decimal
+      - Cost  # decimal
+      - Discount  # decimal
+      - OrderStatus  # string
+
+  Budget:
+    definition: TODO
+    table_kind: fact
+    identifier: TODO
+    grain_candidate: one row per Customer
+    grain: TODO confirm or correct the candidate above
+    properties:
+      - SegmentCode  # string
+      - BudgetAmount  # decimal
+
+relationships:
+  # Power BI has no named relationships, so the names below were proposed
+  # from what each join points at. They are a starting point: replace any
+  # that does not say what the link actually means.
+
+  salesForCustomer:  # proposed
+    from: Sales
+    to: Customer
+    cardinality: many_to_one
+    via: Sales.CustomerKey = Customer.CustomerKey
+
+  hasProduct:  # proposed
+    from: Sales
+    to: Product
+    cardinality: many_to_one
+    via: Sales.ProductKey = Product.ProductKey
+
+  onOrderDate:  # proposed
+    from: Sales
+    to: Date
+    cardinality: many_to_one
+    via: Sales.OrderDate = Date.DateKey
+
+  onShipDate:  # proposed
+    from: Sales
+    to: Date
+    cardinality: many_to_one
+    via: Sales.ShipDate = Date.DateKey
+    active: false  # an alternate path somebody chose not to use
+
+  byEmployee:  # proposed
+    from: Sales
+    to: Employee
+    cardinality: many_to_one
+    via: Sales.EmployeeKey = Employee.EmployeeKey
+
+  inCategory:  # proposed
+    from: Product
+    to: Category
+    cardinality: many_to_one
+    via: Product.CategoryKey = Category.CategoryKey
+
+  hasManager:  # proposed
+    from: Employee
+    to: Employee
+    cardinality: many_to_one
+    via: Employee.ManagerKey = Employee.EmployeeKey
+    active: false  # an alternate path somebody chose not to use
+
+  budgetForCustomer:  # proposed
+    from: Budget
+    to: Customer
+    cardinality: many_to_many
+    via: Budget.SegmentCode = Customer.SegmentCode
+    crossfilter: bothDirections  # ambiguous, resolve explicitly
+
+measures:
+
+  Revenue:
+    definition: TODO
+    home_table: Sales
+    formula_dax: "CALCULATE ( SUM ( Sales[Amount] ), Sales[OrderStatus] = \"Confirmed\" )"
+    filters: "counts only rows where OrderStatus is \"Confirmed\""  # derived from the DAX
+    owner: TODO who signs off on this definition
+
+  Total Revenue:
+    definition: TODO
+    home_table: Sales
+    formula_dax: "CALCULATE(SUM(Sales[Amount]), Sales[OrderStatus] = \"Confirmed\")"
+    filters: "counts only rows where OrderStatus is \"Confirmed\""  # derived from the DAX
+    owner: TODO who signs off on this definition
+
+  Net Revenue:
+    definition: "Revenue after discount, confirmed orders only, excluding discontinued lines."
+    home_table: Sales
+    formula_dax: "CALCULATE ( SUMX ( Sales, Sales[Amount] * ( 1 - Sales[Discount] ) ), Sales[OrderStatus] = \"Confirmed\", Product[DiscontinuedFlag] = 0 )"
+    filters: "counts only rows where OrderStatus is \"Confirmed\"; counts only rows where DiscontinuedFlag is 0"  # derived from the DAX
+    owner: TODO who signs off on this definition
+
+  Cost of Sales:
+    definition: TODO
+    home_table: Sales
+    formula_dax: "CALCULATE ( SUM ( Sales[Cost] ), Sales[OrderStatus] IN { \"Confirmed\", \"Shipped\" } )"
+    filters: "counts only rows where OrderStatus is one of \"Confirmed\", \"Shipped\""  # derived from the DAX
+    owner: TODO who signs off on this definition
+
+  Gross Margin:
+    definition: TODO
+    home_table: Sales
+    formula_dax: "[Net Revenue] - [Cost of Sales]"
+    filters: none found in the DAX
+    built_from: [Cost of Sales, Net Revenue]
+    owner: TODO who signs off on this definition
+
+  Gross Margin %:
+    definition: TODO
+    home_table: Sales
+    formula_dax: "DIVIDE ( [Gross Margin], [Net Revenue], 0 )"
+    filters: none found in the DAX
+    built_from: [Gross Margin, Net Revenue]
+    owner: TODO who signs off on this definition
+
+  Margin Variance %:
+    definition: TODO
+    home_table: Sales
+    formula_dax: "DIVIDE ( SUM ( Sales[Amount] ) - SUM ( Sales[Cost] ), SUM ( Sales[Cost] ), 0 )"
+    filters: none found in the DAX
+    owner: TODO who signs off on this definition
+
+  Shipped Revenue:
+    definition: TODO
+    home_table: Sales
+    formula_dax: "CALCULATE ( [Revenue], USERELATIONSHIP ( Sales[ShipDate], 'Date'[DateKey] ) )"
+    filters: "USERELATIONSHIP, activates an inactive relationship"  # derived from the DAX
+    built_from: [Revenue]
+    owner: TODO who signs off on this definition
+
+  FY24 Baseline:
+    definition: TODO
+    home_table: Sales
+    formula_dax: "CALCULATE ( [Revenue], 'Date'[DateKey] >= DATE ( 2024, 4, 1 ) )"
+    filters: "hardcoded year 2024"  # derived from the DAX
+    built_from: [Revenue]
+    owner: TODO who signs off on this definition
+
+  Order Count:
+    definition: TODO
+    home_table: Sales
+    formula_dax: "DISTINCTCOUNT ( Sales[SalesKey] )"
+    filters: none found in the DAX
+    owner: TODO who signs off on this definition
+
+  Budget Amount:
+    definition: TODO
+    home_table: Budget
+    formula_dax: "SUM ( Budget[BudgetAmount] )"
+    filters: none found in the DAX
+    owner: TODO who signs off on this definition
+
+value_sets:
+  # Every literal the model compares each column against. This is the set
+  # of values the numbers actually depend on. Anything outside it is
+  # silently excluded, which is why it belongs in the ontology.
+
+  OrderStatus:
+    values: ["Confirmed", "Shipped"]
+    relied_on_by: [Cost of Sales, Net Revenue, Revenue, Total Revenue]
+    closed: TODO can a new value appear in the source? who approves it?
+
+constraints:
+  # Generated from evidence in the model. Each one is proposed: it states
+  # what the model already assumes, not what anybody has agreed to.
+
+  - id: orderstatus_observed_values
+    observed: OrderStatus is only ever compared against ['Confirmed', 'Shipped'],
+      by 4 measures.
+    # That is what the model does, not what must be true. One of these
+    # holds, and only a person can say which:
+    #   a) these are the only valid values, anything else is a data error
+    #   b) other values exist and are deliberately excluded
+    #   c) other values exist and are being dropped by accident
+    check_first: run a distinct on the source OrderStatus. Any value not in the
+      list above is counted by no measure at all.
+    rule: TODO write it once a) b) or c) is settled
+    severity: error
+    status: proposed
+
+  - id: margin_variance_filter_check
+    rule: Margin Variance % aggregates Sales[Amount], Sales[Cost] but applies no
+      filter on OrderStatus, unlike Cost of Sales, Net Revenue, Revenue, Total Revenue.
+    because: a measure in a family that skips the family's filter usually
+      returns a number that does not mean what its name says.
+    severity: error
+    status: proposed, needs a human to confirm whether it is deliberate
+
+# Still TODO, and not derivable by any tool:
+#   every class definition, the hierarchy, who owns each measure,
+#   whether the proposed constraints above are correct.

@@ -1,0 +1,17 @@
+# Never commit a model file. This is the usual way client logic leaks.
+*.bim
+*.pbix
+*.pbip
+*.pbit
+!examples/sample-model.bim
+
+# Generated output from real models
+out/
+out-*/
+
+__pycache__/
+*.pyc
+.venv/
+venv/
+.DS_Store
+.vscode/

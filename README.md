@@ -178,6 +178,19 @@ measures and people's heads. The published work on that:
 Treat all of these as directional. They are mostly vendor published and run on
 small question sets.
 
+## Related
+
+[sql-semantic-benchmark](https://github.com/BhargaviVudimudi/sql-semantic-benchmark)
+measures how much a written set of definitions actually improves AI generated
+SQL, on a public benchmark, with the raw results included. Short answer: about
+eight times better on the questions the definitions cover, nothing at all
+outside that coverage, and a longer more complete version of the same document
+scored half as well.
+
+The two repositories are halves of the same question. This one finds out what
+your existing models are missing. That one measures whether writing the missing
+parts down is worth the effort.
+
 ## Licence
 
 MIT. See `LICENSE`.
